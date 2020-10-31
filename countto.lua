@@ -2,6 +2,7 @@ obs           = obslua
 source_name   = ""
 
 last_text     = ""
+stop_text     = ""
 activated     = false
 
 hotkey_id     = obs.OBS_INVALID_HOTKEY_ID
@@ -19,6 +20,10 @@ function set_time_text()
 	local minutes       = math.floor(total_minutes % minutes_per_hour)
 	local hours         = math.floor(total_minutes / minutes_per_hour)
 	local text          = string.format("%02d:%02d:%02d", hours, minutes, seconds)
+
+	if cur_seconds < 1 then
+		text = stop_text
+	end
 
 	if text ~= last_text then
 		local source = obs.obs_get_source_by_name(source_name)
@@ -118,6 +123,7 @@ function script_properties()
 		end
 	end
 	obs.source_list_release(sources)
+	obs.obs_properties_add_text(props, "stop_text", "Final Text", obs.OBS_TEXT_DEFAULT)
 
 	obs.obs_properties_add_button(props, "reset_button", "Reset Timer", reset_button_clicked)
 
@@ -135,7 +141,7 @@ function get_target_time(settings)
 	hour =  obs.obs_data_get_int(settings, "hour_start")
 	minute = obs.obs_data_get_int(settings, "minute_start")
 	target_time = midnight + (hour * seconds_per_hour) + (minute * seconds_per_minute)
-	if (target_time < os.time())
+	if (target_time < os.time() and os.time() - target_time > 1800)
 		then
 			target_time = target_time + seconds_per_day
 		end
@@ -148,6 +154,7 @@ function script_update(settings)
 
 	total_seconds = get_target_time(settings) - os.time();
 	source_name = obs.obs_data_get_string(settings, "source")
+	stop_text = obs.obs_data_get_string(settings, "stop_text")
 
 	reset(true)
 end
